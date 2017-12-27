@@ -1,9 +1,6 @@
 # Split polygons in Google Maps
 A Google Maps JavaScript API v3 library to split an exisiting polygon into two separate polygons.
 
-## Demo
-Here is a simple [demo page.](http://projects.trentmentink.com/projects/polygon_splitting)
-
 ## Installation
 #### Step 1
 Add the Google Maps JavaScript API version 3 with the geometry library.
