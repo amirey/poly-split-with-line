@@ -459,6 +459,12 @@
 	var polygonPoints = originalPath.getArray();
 	var linePoints = selectionPath.getArray();
 
+	//////////////////
+	// Detach the original polygon
+	this.setMap(null);
+
+	//////////////////
+	// First Polygon
 	var firstPolygonArray = [];
 	var firstPolygonPriorPoints = polygonPoints.slice(0, intPoints[0].originalLineIndex+1);
 	for (var i=0; i<firstPolygonPriorPoints.length; i++) {
@@ -478,23 +484,41 @@
 	}
 	firstPolygonArray.push(polygonPoints[0].toJSON());
 	
-	var bermudaTriangle = new google.maps.Polygon({
+	var firstPolygon = new google.maps.Polygon({
           paths: firstPolygonArray,
-          strokeColor: '#FF0000',
+          strokeColor: '#0000FF',
           strokeOpacity: 0.8,
           strokeWeight: 2,
-          fillColor: '#FF0000',
+          fillColor: '#0000FF',
           fillOpacity: 0.35
         });
-        bermudaTriangle.setMap(map);	
+    firstPolygon.setMap(map);
 
-	//for (var m=0; m<intPoints.length; m++) {
-	//	var marker = new google.maps.Marker({
-    //      position: { lat: intPoints[m].coordinates.lat(), lng: intPoints[m].coordinates.lng() },
-    //      map: map,
-    //      title: m.toString()
-    //    });
-	//}
+	//////////////////
+	// Second Polygon
+	var secondPolygonArray = [];
+	secondPolygonArray.push(intPoints[0].point.coordinates.toJSON());
+	var secondPolygonPriorPoints = polygonPoints.slice(intPoints[0].originalLineIndex+1, intPoints[1].originalLineIndex+1);
+	for (var i=0; i<secondPolygonPriorPoints.length; i++) {
+		secondPolygonArray.push(secondPolygonPriorPoints[i].toJSON());
+	}
+
+	secondPolygonArray.push(intPoints[1].point.coordinates.toJSON());
+	var polygonsSplittingLines = linePoints.slice(1, linePoints.length-1);
+	for (var i=polygonsSplittingLines.length-1; i>=0; i--) {
+		secondPolygonArray.push(polygonsSplittingLines[i].toJSON());
+	}
+	secondPolygonArray.push(intPoints[0].point.coordinates.toJSON());
+	
+	var secondPolygon = new google.maps.Polygon({
+          paths: secondPolygonArray,
+          strokeColor: '#00FF00',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#00FF00',
+          fillOpacity: 0.35
+        });
+    secondPolygon.setMap(map);
 
     // get all the points inside the original polygon
     var pointsInsideOriginal = this.getPointsInside(selectionPoly);
