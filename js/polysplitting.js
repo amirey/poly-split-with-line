@@ -25,7 +25,7 @@
   
   /* polygon - getBounds()
   ---------------------------------*/
-  google.maps.Polygon.prototype.getBounds = function () {
+  google.maps.MVCObject.prototype.getBounds = function () {
     var bounds = new google.maps.LatLngBounds();
     var path = this.getPath();
     
@@ -39,7 +39,7 @@
 
   /* polygon - initSelection(validate)
   ---------------------------------*/
-  google.maps.Polygon.prototype.initSelection = function (validate) {
+  google.maps.MVCObject.prototype.initSelection = function (validate) {
     var map = this.getMap();
     var bounds = this.getBounds();
 
@@ -49,43 +49,46 @@
     var nw = new google.maps.LatLng(ne.lat(), sw.lng());
     var se = new google.maps.LatLng(sw.lat(), ne.lng());
 
-    var coords = [nw, ne, se, sw];
+	var mid_east = new google.maps.LatLng((ne.lat() + se.lat())/2, ne.lng());
+	var mid_west = new google.maps.LatLng((nw.lat() + sw.lat())/2, nw.lng());
+	var center = new google.maps.LatLng((nw.lat() + sw.lat())/2, (ne.lng() + sw.lng())/2);
 
-    var selectionPoly = new google.maps.Polygon({
-      paths: coords,
-      draggable: true,
+    var coords = [mid_east, mid_west];
+
+	var splittingLine = new google.maps.Polyline({
+	  path: coords,
       editable: true,
-      strokeColor: "#000000",
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      fillColor: "#000000",
-      fillOpacity: 0.35,
-      zIndex: 1000
-    });
-    selectionPoly.setMap(map);
+      draggable: true,
+	  geodesic: true,
+	  strokeColor: '#FF0000',
+	  strokeOpacity: 1.0,
+	  strokeWeight: 2
+	});
+
+    splittingLine.setMap(map);
 
     // add event listeners to ensure selection poly does not intersect itself
     if (validate === 'validate') {
       // use of debounce is highly reccomended when attaching to the "set_at" event
       var validatePoly = debounce(function (index) { 
-        if (!(selectionPoly.validate(index))) { 
+        if (!(splittingLine.validate(index))) { 
           alert('Selection cant intersect itself') 
         } 
       }, 300);
 
-      google.maps.event.addListener(selectionPoly.getPath(), "insert_at", validatePoly);
-      google.maps.event.addListener(selectionPoly.getPath(), "remove_at", validatePoly);
-      google.maps.event.addListener(selectionPoly.getPath(), "set_at", validatePoly);
+      google.maps.event.addListener(splittingLine.getPath(), "insert_at", validatePoly);
+      google.maps.event.addListener(splittingLine.getPath(), "remove_at", validatePoly);
+      google.maps.event.addListener(splittingLine.getPath(), "set_at", validatePoly);
     }
 
     // return the value of the polygon
-    return selectionPoly;
+    return splittingLine;
   }
 
 
   /* polygon - getLineSegments(e)
   ---------------------------------*/
-  google.maps.Polygon.prototype.getLineSegments = function (e) {
+  google.maps.MVCObject.prototype.getLineSegments = function (e) {
     if (typeof e != 'number') {
       e = -1;
     }
@@ -97,7 +100,10 @@
     var path = this.getPath();
 
     // get the index of the last point in the path
-    var lastPoint = path.getLength() - 1;
+	var lastPoint = path.getLength() - 1; // For Polygon
+    if (this instanceof google.maps.Polyline) {
+		lastPoint = path.getLength() - 1; // For Polyline
+    }
 
     // if provided index (e) is within the polygon's path, return only the two line segments sharing that index
     if (e >= 0 && e <= lastPoint) {
@@ -110,7 +116,7 @@
         var startIndex = index;
 
         // connect the last point with the first point in the path to create the final line segment
-        if (index === lastPoint) {
+        if (this instanceof google.maps.Polygon && index === lastPoint) {
           var endCoords = path.getAt(0);
           var endIndex = 0;
         }
@@ -127,7 +133,8 @@
           index++;
         }
 
-        lineSegments.push(new myLineSegment(startCoords, endCoords, startIndex, endIndex));
+		if (startCoords && endCoords)
+			lineSegments.push(new myLineSegment(startCoords, endCoords, startIndex, endIndex));
       }
 
       return lineSegments;
@@ -139,7 +146,7 @@
       var startIndex = i;
       
       // connect the last point with the first point in the path to create the final line segment
-      if (i == lastPoint) {
+      if (this instanceof google.maps.Polygon && i == lastPoint) {
         var endCoords = path.getAt(0);
         var endIndex = 0;
       }
@@ -149,7 +156,9 @@
       }
 
       // create new myLineSegment object and push it into array
-      lineSegments.push(new myLineSegment(startCoords, endCoords, startIndex, endIndex));
+	  
+	  if (startCoords && endCoords)
+		lineSegments.push(new myLineSegment(startCoords, endCoords, startIndex, endIndex));
     }
 
     return lineSegments;
@@ -158,7 +167,7 @@
 
   /* polygon - validate(index)
   ---------------------------------*/
-  google.maps.Polygon.prototype.validate = function (index) {
+  google.maps.MVCObject.prototype.validate = function (index) {
     if (typeof index != 'number') {
       index = null;
     }
@@ -190,7 +199,7 @@
 
   /* polygon - getRotation()
   ---------------------------------*/
-  google.maps.Polygon.prototype.getRotation = function () {
+  google.maps.MVCObject.prototype.getRotation = function () {
     // get the polygons path
     var path = this.getPath();
 
@@ -212,7 +221,7 @@
 
   /* polygon - countPointsInside(test)
   ---------------------------------*/
-  google.maps.Polygon.prototype.countPointsInside = function (test) {
+  google.maps.MVCObject.prototype.countPointsInside = function (test) {
     // if test is not a google maps Polygon object return null
     if (!(test instanceof google.maps.Polygon)) {
       return null;
@@ -237,9 +246,9 @@
 
   /* polygon - getPointsInside(test)
   ---------------------------------*/
-  google.maps.Polygon.prototype.getPointsInside = function (test) {
+  google.maps.MVCObject.prototype.getPointsInside = function (test) {
     // if test is not a google maps Polygon object return null
-    if (!(test instanceof google.maps.Polygon)) {
+    if (!(test instanceof google.maps.MVCObject)) {
       return null;
     }
 
@@ -266,7 +275,7 @@
 
   /* polygon - containsPoint(test)
   ---------------------------------*/
-  google.maps.Polygon.prototype.containsPoint = function (test) {
+  google.maps.MVCObject.prototype.containsPoint = function (test) {
     // if test is not a google maps LatLng object return null
     if (!(test instanceof google.maps.LatLng)) {
       return null;
@@ -279,9 +288,9 @@
 
   /* polygon - countIntersections(test)
   ---------------------------------*/
-  google.maps.Polygon.prototype.countIntersections = function (test) {
+  google.maps.MVCObject.prototype.countIntersections = function (test) {
     // if test is not a google maps Polygon object return null
-    if (!(test instanceof google.maps.Polygon)) {
+    if (!(test instanceof google.maps.MVCObject)) {
       return null;
     }
 
@@ -310,9 +319,9 @@
 
   /* polygon - getIntersections(test)
   ---------------------------------*/
-  google.maps.Polygon.prototype.getIntersections = function (test) {
+  google.maps.MVCObject.prototype.getIntersections = function (test) {
     // if test is not a google maps Polygon object return null
-    if (!(test instanceof google.maps.Polygon)) {
+    if (!(test instanceof google.maps.MVCObject)) {
       return null;
     }
 
@@ -350,6 +359,19 @@
       return [];
     }
 
+	intersectionPointsSorted = _orderIntersectionPoints(intersectionPoints);
+	
+	// return a JSON with the indexes of the points
+	var originalLineFirstIndex = intersectionPointsSorted[0].originalLine.startIndex;
+	var originalLineSecondIndex = intersectionPointsSorted[1].originalLine.startIndex;
+	if (originalLineFirstIndex == originalLineSecondIndex) {
+		originalLineSecondIndex++;
+	}
+	return [
+		{point: intersectionPointsSorted[0], originalLineIndex: originalLineFirstIndex},
+		{point: intersectionPointsSorted[1], originalLineIndex: originalLineSecondIndex}
+	];
+	
     // return the intersection points ordered by their distance from the start of original path
     return _orderIntersectionPoints(intersectionPoints);
 
@@ -395,12 +417,12 @@
 
   /* polygon - split(selectionPoly)
   ---------------------------------*/
-  google.maps.Polygon.prototype.split = function (selectionPoly) {
+  google.maps.MVCObject.prototype.split = function (selectionPoly) {
     // if selectionPoly is not a google.maps.Polygon object return null
-    if (!(selectionPoly instanceof google.maps.Polygon)) {
-      alert('Parameter must be a google.maps.Polygon object.');
-      return null;
-    }
+    //if (!(selectionPoly instanceof google.maps.Polygon)) {
+    //  alert('Parameter must be a google.maps.Polygon object.');
+    //  return null;
+    //}
 
     // if selectionPoly is self intersecting return null
     if (!(selectionPoly.validate())) {
@@ -434,6 +456,45 @@
 
     // get all the intersection points
     var intPoints = this.getIntersections(selectionPoly);
+	var polygonPoints = originalPath.getArray();
+	var linePoints = selectionPath.getArray();
+
+	var firstPolygonArray = [];
+	var firstPolygonPriorPoints = polygonPoints.slice(0, intPoints[0].originalLineIndex+1);
+	for (var i=0; i<firstPolygonPriorPoints.length; i++) {
+		firstPolygonArray.push(firstPolygonPriorPoints[i].toJSON());
+	}
+	firstPolygonArray.push(intPoints[0].point.coordinates.toJSON());
+
+	var polygonsSplittingLines = linePoints.slice(1, linePoints.length);
+	for (var i=0; i<polygonsSplittingLines.length; i++) {
+		firstPolygonArray.push(polygonsSplittingLines[i].toJSON());
+	}
+	firstPolygonArray.push(intPoints[1].point.coordinates.toJSON());
+
+	var firstPolygonPostPoints = polygonPoints.slice(intPoints[1].originalLineIndex+1, polygonPoints.length);
+	for (var i=0; i<firstPolygonPostPoints.length; i++) {
+		firstPolygonArray.push(firstPolygonPostPoints[i].toJSON());
+	}
+	firstPolygonArray.push(polygonPoints[0].toJSON());
+	
+	var bermudaTriangle = new google.maps.Polygon({
+          paths: firstPolygonArray,
+          strokeColor: '#FF0000',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF0000',
+          fillOpacity: 0.35
+        });
+        bermudaTriangle.setMap(map);	
+
+	//for (var m=0; m<intPoints.length; m++) {
+	//	var marker = new google.maps.Marker({
+    //      position: { lat: intPoints[m].coordinates.lat(), lng: intPoints[m].coordinates.lng() },
+    //      map: map,
+    //      title: m.toString()
+    //    });
+	//}
 
     // get all the points inside the original polygon
     var pointsInsideOriginal = this.getPointsInside(selectionPoly);
